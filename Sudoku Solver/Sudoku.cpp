@@ -1,0 +1,71 @@
+#include "Sudoku.h"
+
+#include <fstream>
+
+Sudoku::Sudoku()
+	:Complete(false)
+{
+}
+
+bool Sudoku::Load(std::string PathToFile)
+{	
+	std::ifstream In(PathToFile);
+	if(!In.good())
+	{
+		return false;
+	}
+
+	// Read in board from file
+	Board.push_back(std::vector<Cell>());
+	char Temp;
+	while(In.get(Temp))
+	{
+		if(Temp=='\n')
+		{
+			Board.push_back(std::vector<Cell>());
+		}
+		else
+		{
+			Board[Board.size()-1].push_back(atoi(&Temp));
+		}
+	}
+
+	// Validate board
+	if(Board.size()==0)
+	{
+		// Invalid board
+		return false;
+	}
+
+	int Size=Board[0].size();
+	for(unsigned int y=0; y<Board.size(); y++)
+	{
+		if(Board[y].size()!=Size)
+		{
+			// Not regularly shaped
+			return false;
+		}
+	}
+
+	return true;
+}
+bool Sudoku::Load(std::vector<std::vector<Cell>> Board)
+{
+	this->Board=Board;
+
+	return true;
+}
+
+void Sudoku::operator=(Sudoku One)
+{
+	Board=One.Board;
+}
+
+bool Sudoku::IsComplete()
+{
+	return Complete;
+}
+void Sudoku::SetComplete(bool Complete)
+{
+	this->Complete=Complete;
+}

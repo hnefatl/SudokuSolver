@@ -78,13 +78,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Board.cpp" />
+    <ClCompile Include="Cell.cpp" />
+    <ClCompile Include="Sudoku.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SudokuSolver.cpp" />
     <ClCompile Include="Vector.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Board.h" />
+    <ClInclude Include="Cell.h" />
+    <ClInclude Include="Sudoku.h" />
     <ClInclude Include="SudokuSolver.h" />
     <ClInclude Include="Vector.h" />
   </ItemGroup>
