@@ -4,6 +4,7 @@
 #include "Vector.h"
 #include "Cell.h"
 
+#include <iostream>
 #include <vector>
 
 class Sudoku
@@ -18,6 +19,8 @@ public:
 
 	bool IsComplete();
 	void SetComplete(bool Complete);
+
+	void Print();
 
 	std::vector<std::vector<Cell>> Board;
 

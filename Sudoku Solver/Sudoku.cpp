@@ -69,3 +69,22 @@ void Sudoku::SetComplete(bool Complete)
 {
 	this->Complete=Complete;
 }
+
+void Sudoku::Print()
+{
+	for(unsigned int y=0; y<9; y++)
+	{
+		for(unsigned int x=0; x<9; x++)
+		{
+			if(Board[y][x].Value!=0)
+			{
+				std::cout<<Board[y][x].Value;
+			}
+			else
+			{
+				std::cout<<"_";
+			}
+		}
+		std::cout<<std::endl;
+	}
+}

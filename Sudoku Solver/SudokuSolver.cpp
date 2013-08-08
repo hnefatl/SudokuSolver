@@ -1,28 +1,45 @@
 #include "SudokuSolver.h"
+#include <iostream>
 
 SudokuSolver::SudokuSolver(std::string PathToFile)
 {
 	Main.Load(PathToFile);
 }
 
-void SudokuSolver::Solve()
-{	
+bool SudokuSolver::Solve()
+{
 	for(unsigned int y=0; y<9; y++)
 	{
 		for(unsigned int x=0; x<9; x++)
 		{
-			EnforceArcConsistency(&Main, Vector(x, y));
+			if(!EnforceArcConsistency(&Main, Vector(x, y)))
+			{
+				return false;
+			}
 		}
 	}
+
+	return true;
 }
 
 bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 {
+	// Empty domain
+	if(Board->Board[Position.Y][Position.X].Domain.size()==0)
+	{
+		return false;
+	}
+	// Singleton domain
+	else if(Board->Board[Position.Y][Position.X].Domain.size()==1)
+	{
+		Board->Board[Position.Y][Position.X].Value=Board->Board[Position.Y][Position.X].Domain[0];
+	}
 	if(Board->Board[Position.Y][Position.X].Value==0)
 	{
-		// No set value - no point in enforcing, but no error either
+		// No point in processing
 		return true;
 	}
+
 	// Enforce arc consistency for this position, storing all affected neighbours
 	std::vector<Vector> UpdatedPositions;
 
@@ -38,7 +55,7 @@ bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 				{
 					// Number found - erase from Domain
 					Board->Board[y][Position.X].Domain.erase(Board->Board[y][Position.X].Domain.begin()+Location);
-					UpdatedPositions.push_back(Vector(y, Position.X));
+					UpdatedPositions.push_back(Vector(Position.X, y));
 				}
 			}
 		}
@@ -55,26 +72,29 @@ bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 				{
 					// Number found - erase from Domain
 					Board->Board[Position.Y][x].Domain.erase(Board->Board[Position.Y][x].Domain.begin()+Location);
-					UpdatedPositions.push_back(Vector(Position.Y, x));
+					UpdatedPositions.push_back(Vector(x, Position.Y));
 				}
 			}
 		}
 	}
 	// Traverse box
-	for(unsigned int y=(Position.Y%3)*3; y<((Position.Y%3)*3)+3; y++)
+	for(unsigned int y=(Position.Y/3)*3; y<((Position.Y/3)*3)+3; y++)
 	{
-		for(unsigned int x=(Position.X%3)*3; x<((Position.X%3)*3)+3; x++)
+		for(unsigned int x=(Position.X/3)*3; x<((Position.X/3)*3)+3; x++)
 		{
+			// If not the same cell as currently working
 			if(y!=Position.Y && x!=Position.X)
 			{
-				if(Board->Board[y][y].Value==0)
+				// If unset variable
+				if(Board->Board[y][x].Value==0)
 				{
+					// Find location of variable
 					int Location=Contains(Board->Board[Position.Y][Position.X].Value, Board->Board[y][x].Domain);
 					if(Location!=-1)
 					{
 						// Number found - erase from Domain
 						Board->Board[y][x].Domain.erase(Board->Board[y][x].Domain.begin()+Location);
-						UpdatedPositions.push_back(Vector(y, x));
+						UpdatedPositions.push_back(Vector(x, y));
 					}
 				}
 			}
@@ -84,11 +104,6 @@ bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 	// Process each updated position
 	for(unsigned int x=0; x<UpdatedPositions.size(); x++)
 	{
-		// Empty domain
-		if(Board->Board[UpdatedPositions[x].Y][UpdatedPositions[x].X].Domain.size()==0)
-		{
-			return false;
-		}
 		// Failed later consistency check
 		if(!EnforceArcConsistency(Board, UpdatedPositions[x]))
 		{
@@ -102,23 +117,27 @@ bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 int SudokuSolver::Contains(unsigned short Value, std::vector<unsigned short> Domain)
 {
 	// Assume Domain of cells is ordered, so run binary search
-	unsigned int Low=0, High=Domain.size(), Middle=(Low+High)/2;
-	while(Low!=Middle && Low!=High)
+	unsigned int Low=0, High=Domain.size(), Middle;
+	while(High>=Low) // Allow a last check when Low and High are 0
 	{
+		Middle=(Low+High)/2;
+		if(Middle>=Domain.size())
+		{
+			// Prevent exception being thrown
+			break;
+		}
 		if(Value==Domain[Middle])
 		{
 			return Middle;
 		}
 		else if(Value<Domain[Middle])
 		{
-			High=Middle;
+			High=Middle-1;
 		}
 		else if(Value>Domain[Middle])
 		{
-			Low=Middle;
+			Low=Middle+1;
 		}
-		// Change must have been made or location found, update middle
-		Middle=(Low+High)/2;
 	}
 
 	return -1;

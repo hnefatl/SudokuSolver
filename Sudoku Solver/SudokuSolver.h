@@ -12,7 +12,7 @@ class SudokuSolver
 public:
 	SudokuSolver(std::string PathToFile);
 
-	void Solve();
+	bool Solve();
 
 	Sudoku GetSudoku();
 
