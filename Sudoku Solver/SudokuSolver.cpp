@@ -1,13 +1,21 @@
 #include "SudokuSolver.h"
 #include <iostream>
 
-SudokuSolver::SudokuSolver(std::string PathToFile)
+SudokuSolver::SudokuSolver()
 {
-	Main.Load(PathToFile);
+	MakeAssumptionsIfStuck=true;
+	UseMRV=true;
+}
+
+bool SudokuSolver::Load(std::string PathToFile)
+{
+	return Main.Load(PathToFile);
 }
 
 bool SudokuSolver::Solve()
 {
+	std::cout<<"Starting first phase calculations...";
+	// Preprocess the Sudoku
 	for(unsigned int y=0; y<9; y++)
 	{
 		for(unsigned int x=0; x<9; x++)
@@ -18,22 +26,63 @@ bool SudokuSolver::Solve()
 			}
 		}
 	}
+	std::cout<<"Done."<<std::endl;
+	// Check if the sudoku is complete after the preprocessing stage
+	if(Main.IsComplete())
+	{
+		return true;
+	}
+	// If we aren't to do any further processing, return false
+	if(!MakeAssumptionsIfStuck)
+	{
+		return Main.IsComplete();
+	}
 
-	return true;
+	// Otherwise, start making assumptions and processing them until solution is found or no solution is possible
+	std::cout<<"Starting second phase calculations...";
+	bool Result=MakeAssumption(&Main);
+	std::cout<<"Done."<<std::endl<<std::endl;
+	return Result;
+}
+
+bool SudokuSolver::MakeAssumption(Sudoku *Board)
+{
+	if(Board->IsComplete())
+	{
+		Main=*Board;
+		return true;
+	}
+
+	Sudoku Local=*Board; // A copy of the Board at this moment in time
+	Vector Position=FindUnsolvedCell(&Local); // An unsolved Cell's location
+	if(Position==Vector(-1, -1))
+	{
+		// Sudoku solved
+		return true;
+	}
+
+	for(unsigned int x=0; x<Local.Board[Position.Y][Position.X].Domain.size(); x++)
+	{
+		Local.SetCellValue(Position, Local.Board[Position.Y][Position.X].Domain[x]);
+		// If the position is now arc-conistent
+		if(EnforceArcConsistency(&Local, Position))
+		{
+			// Make an assumption on it
+			if(MakeAssumption(&Local))
+			{
+				// If MakeAssumption returns true, the problem is solved
+				return true;
+			}
+		}
+		Local=*Board; // Copy the original
+	}
+
+	// If no values work, the Sudoku is broken - return false to begin the back chaining
+	return false;
 }
 
 bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 {
-	// Empty domain
-	if(Board->Board[Position.Y][Position.X].Domain.size()==0)
-	{
-		return false;
-	}
-	// Singleton domain
-	else if(Board->Board[Position.Y][Position.X].Domain.size()==1)
-	{
-		Board->Board[Position.Y][Position.X].Value=Board->Board[Position.Y][Position.X].Domain[0];
-	}
 	if(Board->Board[Position.Y][Position.X].Value==0)
 	{
 		// No point in processing
@@ -104,14 +153,76 @@ bool SudokuSolver::EnforceArcConsistency(Sudoku *Board, Vector Position)
 	// Process each updated position
 	for(unsigned int x=0; x<UpdatedPositions.size(); x++)
 	{
-		// Failed later consistency check
-		if(!EnforceArcConsistency(Board, UpdatedPositions[x]))
+		if(Board->Board[UpdatedPositions[x].Y][UpdatedPositions[x].X].Value==0)
 		{
-			return false;
+			// Empty domain
+			if(Board->Board[UpdatedPositions[x].Y][UpdatedPositions[x].X].Domain.size()==0)
+			{
+				return false;
+			}
+			// Singleton domain
+			else if(Board->Board[UpdatedPositions[x].Y][UpdatedPositions[x].X].Domain.size()==1)
+			{
+				Board->SetCellValue(UpdatedPositions[x], Board->Board[UpdatedPositions[x].Y][UpdatedPositions[x].X].Domain[0]);
+			}
+			// Failed later consistency check
+			if(!EnforceArcConsistency(Board, UpdatedPositions[x]))
+			{
+				return false;
+			}
 		}
 	}
 
 	return true;
+}
+
+Vector SudokuSolver::FindUnsolvedCell(const Sudoku *Board)
+{	
+	if(UseMRV)
+	{
+		Vector Position; // Holds the position of the Cell with the smallest domain
+		// Find Cell with least possible values
+		unsigned int SmallestDomain=9;
+		for(unsigned int y=0; y<9; y++)
+		{
+			for(unsigned int x=0; x<9; x++)
+			{
+				if(Board->Board[y][x].Domain.size()>1) // Not empty or already found
+				{
+					if(Board->Board[y][x].Domain.size()<SmallestDomain) // Improvement on current smallest domain
+					{
+						SmallestDomain=Board->Board[y][x].Domain.size();
+						Position=Vector(x, y);
+						if(SmallestDomain==2)
+						{
+							// No possible improvement
+							return Position;
+						}
+					}
+				}
+			}
+		}
+
+		return Position;
+	}
+	else
+	{
+		// Find first unsolved cell
+		for(unsigned int y=0; y<9; y++)
+		{
+			for(unsigned int x=0; x<9; x++)
+			{
+				// Unsolved cell
+				if(Board->Board[y][x].Value>1)
+				{
+					return Vector(x, y);
+				}
+			}
+		}
+	}
+
+	// Shouldn't really be able to reach this point - asking for an unsolved Cell in a solved Sudoku
+	return Vector(-1, -1);
 }
 
 int SudokuSolver::Contains(unsigned short Value, std::vector<unsigned short> Domain)

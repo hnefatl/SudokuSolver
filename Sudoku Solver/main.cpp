@@ -11,13 +11,20 @@ int main(int argc, char *argv[])
 #ifndef _DEBUG
 	std::cout<<"Enter the path to the sudoku file: ";
 	std::cin>>Path;
+	std::cout<<std::endl;
 #else
 	Path="Sudoku.txt";
 #endif
 
-	std::cout<<std::endl;
+	SudokuSolver Solver;
 	std::cout<<"Loading Sudoku...";
-	SudokuSolver Solver(Path);
+	if(!Solver.Load(Path))
+	{
+		std::cout<<"Failed."<<std::endl;
+		std::cout<<"Press any key to continue...";
+		_getch();
+		return 1;
+	}
 	std::cout<<"Done."<<std::endl;
 
 	if(!Solver.Solve())
@@ -27,14 +34,16 @@ int main(int argc, char *argv[])
 
 	if(Solver.GetSudoku().IsComplete())
 	{
-		std::cout<<"Sudoku completed:"<<std::endl;
+		std::cout<<std::endl<<"Sudoku completed:"<<std::endl;
 	}
 	else
 	{
-		std::cout<<"Sudoku uncompleted:"<<std::endl<<std::endl;
+		std::cout<<std::endl<<"Sudoku uncompleted:"<<std::endl<<std::endl;
 	}
 
 	Solver.GetSudoku().Print();
+
+	std::cout<<std::endl<<std::endl<<"Press any key to continue...";
 	_getch();
 
 	return 0;

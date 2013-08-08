@@ -3,7 +3,8 @@
 #include <fstream>
 
 Sudoku::Sudoku()
-	:Complete(false)
+	:TotalCells(0),
+	FilledCells(0)
 {
 }
 
@@ -27,8 +28,14 @@ bool Sudoku::Load(std::string PathToFile)
 		else
 		{
 			Board[Board.size()-1].push_back(atoi(&Temp));
+			if(atoi(&Temp)>0)
+			{
+				// Filled value
+				FilledCells++;
+			}
 		}
 	}
+	In.close();
 
 	// Validate board
 	if(Board.size()==0)
@@ -47,27 +54,43 @@ bool Sudoku::Load(std::string PathToFile)
 		}
 	}
 
-	return true;
-}
-bool Sudoku::Load(std::vector<std::vector<Cell>> Board)
-{
-	this->Board=Board;
+	TotalCells=Board.size()*Board[0].size();
 
 	return true;
+}
+
+void Sudoku::SetCellValue(Vector Position, unsigned short Value)
+{
+	Board[Position.Y][Position.X].Value=Value;
+	Board[Position.Y][Position.X].Domain.clear();
+	Board[Position.Y][Position.X].Domain.push_back(Value);
+	FilledCells++;
 }
 
 void Sudoku::operator=(Sudoku One)
 {
-	Board=One.Board;
+	TotalCells=One.TotalCells;
+	FilledCells=One.FilledCells;
+
+	Board.clear();
+	Board.resize(One.Board.size());
+	for(unsigned int y=0; y<One.Board.size(); y++)
+	{
+		Board[y].resize(One.Board[0].size());
+	}
+
+	for(unsigned int y=0; y<One.Board.size(); y++)
+	{
+		for(unsigned int x=0; x<One.Board[y].size(); x++)
+		{
+			Board[y][x]=One.Board[y][x];
+		}
+	}
 }
 
 bool Sudoku::IsComplete()
 {
-	return Complete;
-}
-void Sudoku::SetComplete(bool Complete)
-{
-	this->Complete=Complete;
+	return FilledCells==TotalCells;
 }
 
 void Sudoku::Print()

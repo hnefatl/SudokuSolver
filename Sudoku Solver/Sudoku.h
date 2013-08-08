@@ -13,19 +13,20 @@ public:
 	Sudoku();
 
 	bool Load(std::string PathToFile);
-	bool Load(std::vector<std::vector<Cell>> Board);
 	
+	void SetCellValue(Vector Position, unsigned short Value);
+
 	void operator =(Sudoku One);
 
 	bool IsComplete();
-	void SetComplete(bool Complete);
 
 	void Print();
 
 	std::vector<std::vector<Cell>> Board;
 
 private:
-	bool Complete;
+	unsigned int TotalCells;
+	unsigned int FilledCells;
 };
 
 #endif
